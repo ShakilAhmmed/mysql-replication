@@ -1,0 +1,79 @@
+version: "3.7"
+services:
+  master_database:
+    image: mysql:5.7
+    container_name: replica-master-database
+    restart: unless-stopped
+    volumes:
+      - ./master/conf/mysql.conf.cnf:/etc/mysql/conf.d/mysql.conf.cnf
+      - ./master/data:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: master_database
+      MYSQL_ROOT_PASSWORD: "@@@2083@@@"
+      MYSQL_PASSWORD: "@@@2083@@@"
+      MYSQL_USER: "root"
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    networks:
+      - replica-network
+  master_phpmyadmin:
+    image: phpmyadmin
+    container_name: replica-master-phpmyadmin
+    restart: always
+    tty: true
+    depends_on:
+      - master_database
+    ports:
+      - "7001:80"
+    environment:
+      PMA_HOST: master_database
+      PMA_PORT: 3306
+      PMA_USER: "root"
+      PMA_PASSWORD: "@@@2083@@@"
+      MYSQL_ROOT_PASSWORD: "@@@2083@@@"
+      UPLOAD_LIMIT: 2048M
+    networks:
+      - replica-network
+
+  slave_database:
+    image: mysql:5.7
+    container_name: replica-slave-database
+    restart: unless-stopped
+    depends_on:
+      - master_database
+    volumes:
+      - ./slave/conf/mysql.conf.cnf:/etc/mysql/conf.d/mysql.conf.cnf
+      - ./slave/data:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: master_database
+      MYSQL_ROOT_PASSWORD: "@@@2083@@@"
+      MYSQL_PASSWORD: "@@@2083@@@"
+      MYSQL_USER: "root"
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    networks:
+      - replica-network
+
+
+  slave_phpmyadmin:
+    image: phpmyadmin
+    container_name: replica-slave-phpmyadmin
+    restart: always
+    tty: true
+    depends_on:
+      - slave_database
+    ports:
+      - "7002:80"
+    environment:
+      PMA_HOST: slave_database
+      PMA_PORT: 3306
+      PMA_USER: "root"
+      PMA_PASSWORD: "@@@2083@@@"
+      MYSQL_ROOT_PASSWORD: "@@@2083@@@"
+      UPLOAD_LIMIT: 2048M
+    networks:
+      - replica-network
+
+networks:
+  replica-network:
+    driver: bridge
